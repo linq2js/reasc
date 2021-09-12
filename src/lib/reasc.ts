@@ -4,7 +4,7 @@ import {
   ErrorCallback,
   AsyncComponentContext,
 } from "./types";
-import { useAsyncComponent } from "./useAsyncComponent";
+import { useAsyncComponent } from "./useAsc";
 import * as React from "react";
 
 const loadingContext = React.createContext<any>(null as any);
