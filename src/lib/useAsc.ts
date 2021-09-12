@@ -200,6 +200,27 @@ function createContext<THookData>(
       return disposed || parent?.disposed || false;
     },
 
+    callback(func: Function, transform?: Function): any {
+      return (payload: any) => {
+        const child = createContext(
+          undefined,
+          InvalidHookData,
+          InvalidCache,
+          store,
+          state,
+          InvalidSetState,
+          loading,
+          error
+        );
+
+        if (transform) {
+          payload = transform(payload);
+        }
+
+        return func(child, payload);
+      };
+    },
+
     delay(ms) {
       checkAvailable();
       return wrapResult(context, delay(ms));

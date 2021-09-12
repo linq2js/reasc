@@ -26,6 +26,15 @@ export type InferCancellablePromise<T> = T extends Promise<infer TResolved>
   : T;
 
 export interface AsyncContext {
+  callback<TPayload, TResult>(
+    func: (context: AsyncContext, payload: TPayload) => TResult
+  ): (payload: TPayload) => TResult;
+
+  callback<TPayload, TResult>(
+    func: (context: AsyncContext, payload: TPayload) => TResult,
+    transform: (payload: any) => TPayload
+  ): (payload: TPayload) => TResult;
+
   dispatch(action: string | StoreAction): any;
 
   delay(ms: number): CancellablePromise;
