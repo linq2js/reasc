@@ -20,7 +20,7 @@ export interface Reasc {
     component: (props: TProps, context: AsyncComponentContext<{}>) => any
   ): React.FC<TProps>;
 
-  <TProps extends {}, THookData extends {}>(
+  <TProps extends {}, THookData extends {} = any>(
     options: AsyncComponentOptions<TProps, THookData>,
     component: (props: TProps, context: AsyncComponentContext<THookData>) => any
   ): React.FC<TProps>;
