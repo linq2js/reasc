@@ -18,7 +18,7 @@
     "build": "tsc",
     "build:es": "tsc -p tsconfig.es.json",
     "prerelease": "npm test && npm run build && npm run build:es",
-    "release": "standard-version && npm publish",
+    "release": "standard-version -a && npm publish",
     "test": "jest"
   },
   "keywords": [
