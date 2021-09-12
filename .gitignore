@@ -1,0 +1,16 @@
+/node_modules
+/lib
+
+/react/*.js
+/react/*.d.ts
+/react/*.jsx
+
+/utils/*.js
+/utils/*.d.ts
+/utils/*.jsx
+
+
+/es/**/*.d.ts
+/es/**/*.jsx
+/es/**/*.js
+

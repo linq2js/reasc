@@ -1,0 +1,16 @@
+{
+  "include": ["./src"],
+  "exclude": ["node_modules/*", "**/*.test.*"],
+  "compilerOptions": {
+    "types": ["node", "@types/jest"],
+    "esModuleInterop": false,
+    "target": "ES5",
+    "lib": ["dom", "es2015"],
+    "strict": true,
+    "outDir": "./",
+    "declaration": true,
+    "rootDir": "./src",
+    "module": "commonjs",
+    "jsx": "react"
+  }
+}
