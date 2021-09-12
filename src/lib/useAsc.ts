@@ -359,22 +359,18 @@ function createContext<THookData>(
     },
 
     ready(...props: string[]): any {
-      return context.when(() => {
+      const check = () => {
         const state = store.getState();
-        return props.every(
-          (prop) => state[prop] !== null && typeof state[prop] !== "undefined"
-        );
-      });
+        return props.every((prop) => isNotNil(state[prop]));
+      };
+      if (check()) return Promise.resolve();
+      return context.when(check);
     },
 
-    storeReady<T>(name: string, defaultValue?: T) {
-      return wrapResult(
-        context,
-        (async () => {
-          await context.ready(name);
-          return context.store(name, defaultValue);
-        })()
-      );
+    storeReady(name: string) {
+      const value = store.getState()[name];
+      if (isNotNil(value)) return Promise.resolve(value);
+      return context.ready(name).then(() => store.getState()[name]);
     },
 
     store(payload: any, defaultValue?: any) {
@@ -466,6 +462,10 @@ function wrapResult(context: Context<any>, result: any, ct?: any) {
     );
   }
   return result;
+}
+
+function isNotNil(value: any) {
+  return value !== null && typeof value !== "undefined";
 }
 
 function isStringMatch(pattern: string, value: string) {
