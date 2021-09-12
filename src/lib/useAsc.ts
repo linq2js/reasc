@@ -241,7 +241,7 @@ function createContext<THookData>(
         undefined,
         undefined
       );
-      const result = action(payload, child);
+      const result = action(child, payload);
       return wrapResult(child, result);
     },
 
@@ -261,7 +261,7 @@ function createContext<THookData>(
             (action: StoreAction) => {
               const isMatch = actions.some((a) => {
                 if (typeof a === "string") {
-                  return a === action.type;
+                  return a === "*" || isStringMatch(a, action.type);
                 }
                 if (typeof a === "function") {
                   return a(action);
@@ -305,7 +305,7 @@ function createContext<THookData>(
         loading,
         error
       );
-      return wrapResult(child, action(payload, child));
+      return wrapResult(child, action(child, payload));
     },
     memo(...args: any[]) {
       checkAvailable();
@@ -356,6 +356,25 @@ function createContext<THookData>(
       }
 
       return wrapResult(child, item.value);
+    },
+
+    ready(...props: string[]): any {
+      return context.when(() => {
+        const state = store.getState();
+        return props.every(
+          (prop) => state[prop] !== null && typeof state[prop] !== "undefined"
+        );
+      });
+    },
+
+    storeReady<T>(name: string, defaultValue?: T) {
+      return wrapResult(
+        context,
+        (async () => {
+          await context.ready(name);
+          return context.store(name, defaultValue);
+        })()
+      );
     },
 
     store(payload: any, defaultValue?: any) {
@@ -447,6 +466,16 @@ function wrapResult(context: Context<any>, result: any, ct?: any) {
     );
   }
   return result;
+}
+
+function isStringMatch(pattern: string, value: string) {
+  if (pattern[0] === "*") {
+    return value.endsWith(pattern.substr(1));
+  }
+  if (pattern[pattern.length - 1] === "*") {
+    return value.startsWith(pattern.substr(0, pattern.length - 1));
+  }
+  return pattern === value;
 }
 
 function mergeState(state: any, values: {}) {

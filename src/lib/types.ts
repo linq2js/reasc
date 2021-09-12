@@ -53,7 +53,9 @@ export interface AsyncContext {
     ...actions: (string | ((action: StoreAction) => boolean))[]
   ): CancellablePromise<StoreAction>;
 
+  storeReady<T>(name: string, defaultValue?: T): CancellablePromise<T>;
   store<T>(name: string, defaultValue?: T): T;
+  ready<T>(...names: string[]): CancellablePromise<void>;
   store(values: { [key: string]: any }): void;
 
   fork<TPayload, TResult>(
@@ -84,14 +86,14 @@ export interface AsyncContext {
 
   memo<TPayload extends {}, TResult>(
     key: any,
-    action: Action<TPayload, TResult, this>,
+    action: (payload: TPayload) => TResult,
     payload?: TPayload,
     local?: boolean
   ): InferCancellablePromise<TResult>;
 
   memo<TPayload extends {}, TResult>(
     key: any,
-    action: Action<TPayload, TResult, this>,
+    action: (payload: TPayload) => TResult,
     local: boolean
   ): InferCancellablePromise<TResult>;
 }
@@ -100,10 +102,10 @@ export type LoadingCallback<TProps = {}> = (props: TProps) => any;
 export type ErrorCallback<TProps = {}> = (props: TProps, error: Error) => any;
 
 export type Action<
-  TPayload,
-  TResult,
+  TPayload = never,
+  TResult = any,
   TContext extends AsyncContext = AsyncContext
-> = (payload: TPayload, context: TContext) => TResult;
+> = (context: TContext, payload: TPayload) => TResult;
 
 export type ActionListener = (action: StoreAction) => void;
 

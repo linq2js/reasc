@@ -3,6 +3,7 @@ import { createProvider } from ".";
 import { reasc } from "../lib/reasc";
 import { render, fireEvent } from "@testing-library/react";
 import { delayedAct } from "../lib/testUtils";
+import { Action } from "../lib/types";
 
 test("counter: using store", async () => {
   const [Provider] = createProvider({ count: 0 });
@@ -37,5 +38,36 @@ test("counter: using store", async () => {
 
   await delayedAct();
 
+  expect(getByTestId("result").innerHTML).toBe("1");
+
+  fireEvent.click(getByTestId("result"));
+
+  await delayedAct();
+
+  expect(getByTestId("result").innerHTML).toBe("2");
+});
+
+test("wait store value ready", async () => {
+  const [Provider] = createProvider({});
+  const LoadData: Action = async ({ delay, store }) => {
+    await delay(10);
+    store({ data: 1 });
+  };
+  const Viewer = reasc(async (props, { storeReady }) => {
+    const data = await storeReady<number>("data");
+    return <div data-testid="result">{data}</div>;
+  });
+  const App = reasc(({ children }: any, { fork }) => {
+    fork(LoadData);
+    return children;
+  });
+  const { getByTestId } = render(
+    <Provider>
+      <App>
+        <Viewer />
+      </App>
+    </Provider>
+  );
+  await delayedAct(15);
   expect(getByTestId("result").innerHTML).toBe("1");
 });
