@@ -11,7 +11,8 @@
   },
   "files": [
     "lib",
-    "es"
+    "es",
+    "redux"
   ],
   "scripts": {
     "build": "tsc",
@@ -19,10 +20,7 @@
     "release": "standard-version && npm publish",
     "test": "jest",
     "prepublish": "npm test && npm run build && npm run build:es",
-    "postpublish": "git push origin --tags",
-    "pub:patch": "npm version patch && npm publish",
-    "pub:minor": "npm version minor && npm publish",
-    "pub:major": "npm version major && npm publish"
+    "postpublish": "git push origin --tags"
   },
   "keywords": [
     "functional",
