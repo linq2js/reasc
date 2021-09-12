@@ -104,7 +104,9 @@ function createContext<THookData>(
   const whenActionDispatchingHandlers = eventEmitter<StoreAction>();
 
   const checkAvailable = () => {
-    if (context.disposed) throw DisposedError();
+    if (context.disposed) {
+      throw DisposedError();
+    }
   };
 
   const rerender = () => {
@@ -392,6 +394,7 @@ function createContext<THookData>(
 
     dispose() {
       if (disposed) return;
+      disposed = true;
       unsubscribeStateChange?.();
     },
   };

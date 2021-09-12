@@ -50,3 +50,27 @@ test("counter: using state", async () => {
 
   expect(getByTestId("result").innerHTML).toBe("4");
 });
+
+test("debouncing", async () => {
+  const Component = reasc(async ({ count }: any, { delay }) => {
+    await delay(10);
+    return <div data-testid="result">{count * 2}</div>;
+  });
+  const App = () => {
+    const [count, setCount] = React.useState(0);
+    return (
+      <>
+        <button data-testid="button" onClick={() => setCount(count + 1)} />
+        <Component count={count} />
+      </>
+    );
+  };
+  const { getByTestId } = render(<App />);
+
+  fireEvent.click(getByTestId("button"));
+  fireEvent.click(getByTestId("button"));
+
+  await delayedAct(15);
+
+  expect(getByTestId("result").innerHTML).toBe("4");
+});
