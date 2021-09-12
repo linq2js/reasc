@@ -5,6 +5,10 @@
 /react/*.d.ts
 /react/*.jsx
 
+/redux/*.js
+/redux/*.d.ts
+/redux/*.jsx
+
 /utils/*.js
 /utils/*.d.ts
 /utils/*.jsx

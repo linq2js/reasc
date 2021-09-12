@@ -1,16 +1,20 @@
-import { Store } from "redux";
+import { storeContext } from "./storeContext";
 import * as React from "react";
-import { useStore } from "react-redux";
 import {
   Action,
-  AsyncContext,
+  AsyncComponentContext,
   ErrorCallback,
   LoadingCallback,
   MERGE_STATE_ACTION,
+  Store,
+  StoreAction,
 } from "./types";
 import { objectEqual } from "./objectEqual";
+import { eventEmitter } from "./eventEmitter";
+import { actionDispatchingHandlers } from "./reducer";
 
-interface ComponentContext<THookData> extends AsyncContext<THookData> {
+interface InternalComponentContext<THookData>
+  extends AsyncComponentContext<THookData> {
   readonly disposed: boolean;
   readonly hookData: THookData;
   cache: Map<any, CacheItem>;
@@ -20,7 +24,7 @@ interface ComponentContext<THookData> extends AsyncContext<THookData> {
   dispose(): void;
   render<TProps>(
     props: TProps,
-    component: (props: TProps, context: AsyncContext<THookData>) => any
+    component: (props: TProps, context: AsyncComponentContext<THookData>) => any
   ): any;
 }
 
@@ -29,18 +33,23 @@ interface CacheItem {
   payload: any;
 }
 
-const DisposedError = new Error();
+const DisposedError = () => new Error();
+const InvalidHookData = {};
+const InvalidSetState = () => {
+  throw new Error("Cannot update state inside forked context");
+};
+const InvalidCache = new Map();
 
 export function useAsyncComponent<TProps, THookData>(
-  component: (props: TProps, context: AsyncContext<THookData>) => any,
+  component: (props: TProps, context: AsyncComponentContext<THookData>) => any,
   props: TProps,
   hookData: THookData,
   loading: LoadingCallback,
   error: ErrorCallback
 ) {
-  const store = tryGetStore();
+  const store = React.useContext(storeContext);
   const [state, setState] = React.useState<any>({});
-  const contextRef = React.useRef<ComponentContext<THookData>>();
+  const contextRef = React.useRef<InternalComponentContext<THookData>>();
 
   React.useEffect(() => {
     return contextRef.current?.dispose;
@@ -62,7 +71,7 @@ export function useAsyncComponent<TProps, THookData>(
     return resolved.value;
   }
 
-  const context = createComponentContext(
+  const context = createContext(
     undefined,
     hookData,
     contextRef.current?.cache || new Map(),
@@ -78,29 +87,37 @@ export function useAsyncComponent<TProps, THookData>(
   return context.render(props, component);
 }
 
-function createComponentContext<THookData>(
-  parent: ComponentContext<THookData> | undefined,
+function createContext<THookData>(
+  parent: InternalComponentContext<THookData> | undefined,
   hookData: THookData,
   cache: Map<any, CacheItem>,
   store: Store,
   state: any,
   setState: React.SetStateAction<any>,
-  loading: LoadingCallback,
-  error: ErrorCallback
+  loading?: LoadingCallback,
+  error?: ErrorCallback
 ) {
-  const childContexts: ComponentContext<THookData>[] = [];
   let disposed = false;
-  let unsubscribe: (() => void) | undefined = undefined;
+  let unsubscribeStateChange: (() => void) | undefined = undefined;
+  let removeActionDispatchingHandler: (() => void) | undefined = undefined;
   const dependencies = new Map<string, any>();
+  const whenActionDispatchingHandlers = eventEmitter<StoreAction>();
 
   const checkAvailable = () => {
-    if (context.disposed) throw DisposedError;
+    if (context.disposed) throw DisposedError();
   };
 
   const rerender = () => setState({ ...state });
 
+  const registerActionDispatchingHandler = () => {
+    if (removeActionDispatchingHandler) return;
+    removeActionDispatchingHandler = actionDispatchingHandlers.on(
+      whenActionDispatchingHandlers.emit
+    );
+  };
+
   const subscribeStore = () => {
-    if (unsubscribe) return;
+    if (unsubscribeStateChange) return;
     store.subscribe(() => {
       if (context.disposed) return;
       const state = store.getState();
@@ -116,32 +133,59 @@ function createComponentContext<THookData>(
     });
   };
 
-  const wrapResult = (child: ComponentContext<THookData>, result: any) => {
-    if (result && typeof result.then === "function") {
-      return Object.assign(
-        new Promise((resolve, reject) => {
-          result
-            .then((value: any) => {
-              if (child.disposed) return;
-              resolve(value);
-            })
-            .catch((error: Error) => {
-              if (child.disposed) return;
-              reject(error);
-            });
-        }),
-        {
-          cancel() {
-            result?.cancel();
-            child.dispose();
-          },
-        }
-      );
-    }
-    return result;
+  const handleAsyncValues = (type: "all" | "race", values: any): any => {
+    const entries = Object.entries(values);
+    const isArray = Array.isArray(values);
+    const results: any = isArray ? [] : {};
+    const ct = { cancelled: false };
+    const cancels = new Map<any, Function>();
+    let doneCount = 0;
+
+    return wrapResult(
+      context,
+      new Promise((resolve, reject) => {
+        const handleResult = (key: any, value: any, error: any) => {
+          if (ct.cancelled) return;
+          doneCount++;
+          cancels.delete(key);
+          if (error) {
+            ct.cancelled = true;
+            cancels.forEach((cancel) => cancel());
+            reject(error);
+            return;
+          }
+
+          results[key] = value;
+
+          if (type === "race" || doneCount >= entries.length) {
+            // cancel others
+            cancels.forEach((cancel) => cancel());
+            resolve(results);
+          }
+        };
+
+        entries.forEach(([key, value]: [any, any]) => {
+          if (value && typeof value.then === "function") {
+            if (typeof value.cancel === "function") {
+              cancels.set(key, value.cancel);
+            }
+            value.then(
+              (result: any) => handleResult(key, result, undefined),
+              (error: any) => handleResult(key, undefined, error)
+            );
+          } else {
+            if (typeof value.cancel === "function") {
+              cancels.set(key, value.cancel);
+            }
+            handleResult(key, value, undefined);
+          }
+        });
+      }),
+      ct
+    );
   };
 
-  const context: ComponentContext<THookData> = {
+  const context: InternalComponentContext<THookData> = {
     hookData,
     cache,
     resolved: undefined,
@@ -150,12 +194,77 @@ function createComponentContext<THookData>(
     get disposed() {
       return disposed || parent?.disposed || false;
     },
-    call<TPayload, TResult>(
-      action: Action<TPayload, TResult, THookData>,
+
+    fork<TPayload, TResult>(
+      action: Action<TPayload, TResult, any>,
       payload: TPayload
     ) {
       checkAvailable();
-      const child = createComponentContext(
+      const child = createContext(
+        context,
+        InvalidHookData,
+        InvalidCache,
+        store,
+        state,
+        InvalidSetState,
+        undefined,
+        undefined
+      );
+      const result = action(payload, child);
+      return wrapResult(child, result);
+    },
+
+    all(values: any) {
+      return handleAsyncValues("all", values);
+    },
+    race(values: any) {
+      return handleAsyncValues("race", values);
+    },
+    when(...actions: any[]) {
+      checkAvailable();
+      registerActionDispatchingHandler();
+      let unsubscribe: () => void;
+      return Object.assign(
+        new Promise<StoreAction>((resolve) => {
+          unsubscribe = whenActionDispatchingHandlers.on(
+            (action: StoreAction) => {
+              const isMatch = actions.some((a) => {
+                if (typeof a === "string") {
+                  return a === action.type;
+                }
+                if (typeof a === "function") {
+                  return a(action);
+                }
+                return false;
+              });
+              if (isMatch) {
+                return resolve(action);
+              }
+            }
+          );
+        }),
+        {
+          cancel() {
+            unsubscribe?.();
+          },
+        }
+      );
+    },
+
+    dispatch(action: any) {
+      checkAvailable();
+      if (typeof action === "string") {
+        action = { type: action };
+      }
+      return store.dispatch(action);
+    },
+
+    call<TPayload, TResult>(
+      action: Action<TPayload, TResult, any>,
+      payload: TPayload
+    ) {
+      checkAvailable();
+      const child = createContext(
         context,
         hookData,
         context.cache,
@@ -165,7 +274,6 @@ function createComponentContext<THookData>(
         loading,
         error
       );
-      childContexts.push(child);
       return wrapResult(child, action(payload, child));
     },
     memo(...args: any[]) {
@@ -183,23 +291,24 @@ function createComponentContext<THookData>(
           : // (key, action, payload, local)
             args;
 
-      const child = createComponentContext(
+      const child = createContext(
         context,
-        hookData,
-        context.cache,
+        InvalidHookData,
+        InvalidCache,
         store,
         state,
-        setState,
+        InvalidSetState,
         loading,
         error
       );
-
-      childContexts.push(child);
 
       let cache: Map<any, CacheItem> = local
         ? context.cache
         : (store as any).__cache;
 
+      if (cache === InvalidCache) {
+        throw DisposedError();
+      }
       // always global cache
       if (!cache) {
         (store as any).__cache = cache = new Map();
@@ -277,19 +386,41 @@ function createComponentContext<THookData>(
 
     dispose() {
       if (disposed) return;
-      unsubscribe?.();
+      unsubscribeStateChange?.();
     },
   };
 
   return context;
 }
 
-function tryGetStore(): Store {
-  try {
-    return useStore.call(null);
-  } catch {
-    return undefined as any;
+function wrapResult(
+  context: InternalComponentContext<any>,
+  result: any,
+  ct?: any
+) {
+  if (result && typeof result.then === "function") {
+    return Object.assign(
+      new Promise((resolve, reject) => {
+        result
+          .then((value: any) => {
+            if (context.disposed) return;
+            resolve(value);
+          })
+          .catch((error: Error) => {
+            if (context.disposed) return;
+            reject(error);
+          });
+      }),
+      {
+        cancel() {
+          if (ct) ct.cancelled = true;
+          result?.cancel();
+          context.dispose();
+        },
+      }
+    );
   }
+  return result;
 }
 
 function mergeState(state: any, values: {}) {

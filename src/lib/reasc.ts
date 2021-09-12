@@ -2,7 +2,7 @@ import {
   AsyncComponentOptions,
   LoadingCallback,
   ErrorCallback,
-  AsyncContext,
+  AsyncComponentContext,
 } from "./types";
 import { useAsyncComponent } from "./useAsyncComponent";
 import * as React from "react";
@@ -17,12 +17,12 @@ interface ExtraProps {
 
 export interface Reasc {
   <TProps extends {}>(
-    component: (props: TProps, context: AsyncContext<{}>) => any
+    component: (props: TProps, context: AsyncComponentContext<{}>) => any
   ): React.FC<TProps>;
 
   <TProps extends {}, THookData extends {}>(
     options: AsyncComponentOptions<TProps, THookData>,
-    component: (props: TProps, context: AsyncContext<THookData>) => any
+    component: (props: TProps, context: AsyncComponentContext<THookData>) => any
   ): React.FC<TProps>;
 }
 

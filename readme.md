@@ -15,9 +15,3 @@ with YARN
 ```bash
 yarn add reasc
 ```
-
-## Peer Dependencies
-
-- react
-- redux
-- react-redux
