@@ -28,6 +28,8 @@ export type InferCancellablePromise<T> = T extends Promise<infer TResolved>
 export interface AsyncContext {
   dispatch(action: string | StoreAction): any;
 
+  delay(ms: number): CancellablePromise;
+
   all(asyncValues: any[]): CancellablePromise<any[]>;
   all<T extends { [key: string]: any }>(
     asyncValues: T

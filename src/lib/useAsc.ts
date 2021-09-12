@@ -12,9 +12,9 @@ import {
 import { objectEqual } from "./objectEqual";
 import { eventEmitter } from "./eventEmitter";
 import { actionDispatchingHandlers } from "./reducer";
+import { delay } from "./delay";
 
-interface InternalComponentContext<THookData>
-  extends AsyncComponentContext<THookData> {
+interface Context<THookData> extends AsyncComponentContext<THookData> {
   readonly disposed: boolean;
   readonly hookData: THookData;
   cache: Map<any, CacheItem>;
@@ -49,7 +49,7 @@ export function useAsyncComponent<TProps, THookData>(
 ) {
   const store = React.useContext(storeContext);
   const [state, setState] = React.useState<any>({});
-  const contextRef = React.useRef<InternalComponentContext<THookData>>();
+  const contextRef = React.useRef<Context<THookData>>();
 
   React.useEffect(() => {
     return contextRef.current?.dispose;
@@ -88,7 +88,7 @@ export function useAsyncComponent<TProps, THookData>(
 }
 
 function createContext<THookData>(
-  parent: InternalComponentContext<THookData> | undefined,
+  parent: Context<THookData> | undefined,
   hookData: THookData,
   cache: Map<any, CacheItem>,
   store: Store,
@@ -185,7 +185,7 @@ function createContext<THookData>(
     );
   };
 
-  const context: InternalComponentContext<THookData> = {
+  const context: Context<THookData> = {
     hookData,
     cache,
     resolved: undefined,
@@ -193,6 +193,11 @@ function createContext<THookData>(
     rendered: false,
     get disposed() {
       return disposed || parent?.disposed || false;
+    },
+
+    delay(ms) {
+      checkAvailable();
+      return wrapResult(context, delay(ms));
     },
 
     fork<TPayload, TResult>(
@@ -393,11 +398,7 @@ function createContext<THookData>(
   return context;
 }
 
-function wrapResult(
-  context: InternalComponentContext<any>,
-  result: any,
-  ct?: any
-) {
+function wrapResult(context: Context<any>, result: any, ct?: any) {
   if (result && typeof result.then === "function") {
     return Object.assign(
       new Promise((resolve, reject) => {
