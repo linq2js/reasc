@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.20](https://github.com/linq2js/reasc/compare/v0.0.19...v0.0.20) (2021-09-12)
+
+
+### Features
+
+* update scripts ([6d96879](https://github.com/linq2js/reasc/commit/6d96879941799dfac60547762aa80a2ff3249539))
+* update scripts ([4c10b0f](https://github.com/linq2js/reasc/commit/4c10b0faaeabb99410fa453b2548176d7a62a3d5))
+
 ### [0.0.19](https://github.com/linq2js/reasc/compare/v0.0.18...v0.0.19) (2021-09-12)
 
 
