@@ -1,6 +1,6 @@
 {
   "name": "reasc",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "React async component",
   "main": "./lib/index.js",
   "module": "./es/index.js",

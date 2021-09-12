@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.15](https://github.com/linq2js/reasc/compare/v0.0.14...v0.0.15) (2021-09-12)
+
+
+### Features
+
+* install husky and commitlint ([a0a331e](https://github.com/linq2js/reasc/commit/a0a331e4f6da841af86c5a2a560201e907060e03))
+
 ### [0.0.14](https://github.com/linq2js/reasc/compare/v0.0.13...v0.0.14) (2021-09-12)
 
 ### [0.0.13](https://github.com/linq2js/reasc/compare/v0.0.12...v0.0.13) (2021-09-12)
