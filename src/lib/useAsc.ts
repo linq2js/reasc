@@ -40,7 +40,7 @@ const InvalidSetState = () => {
 };
 const InvalidCache = new Map();
 
-export function useAsyncComponent<TProps, THookData>(
+export function useAsc<TProps, THookData>(
   component: (props: TProps, context: AsyncComponentContext<THookData>) => any,
   props: TProps,
   hookData: THookData,

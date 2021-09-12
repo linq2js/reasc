@@ -4,7 +4,7 @@ import {
   ErrorCallback,
   AsyncComponentContext,
 } from "./types";
-import { useAsyncComponent } from "./useAsc";
+import { useAsc } from "./useAsc";
 import * as React from "react";
 
 const loadingContext = React.createContext<any>(null as any);
@@ -35,7 +35,7 @@ export const reasc: Reasc = (...args: any[]): any => {
 
   const wrapper = (props: any, { loading, error }: ExtraProps) => {
     const hookData = options.useHooks?.(props) || ({} as any);
-    return useAsyncComponent(component, props, hookData, loading, error);
+    return useAsc(component, props, hookData, loading, error);
   };
 
   if (contexts.length) {
