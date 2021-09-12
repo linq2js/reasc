@@ -19,8 +19,7 @@
     "build:es": "tsc -p tsconfig.es.json",
     "release": "standard-version && npm publish",
     "test": "jest",
-    "prepublish": "npm test && npm run build && npm run build:es",
-    "postpublish": "git push origin --tags"
+    "prepublish": "npm test && npm run build && npm run build:es"
   },
   "keywords": [
     "functional",
