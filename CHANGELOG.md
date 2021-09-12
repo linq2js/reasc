@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.4](https://github.com/linq2js/reasc/compare/v1.0.3...v1.0.4) (2021-09-12)
+
+
+### Features
+
+* add ready() ([c14340b](https://github.com/linq2js/reasc/commit/c14340b31214e99e68a256349474fd25621fb800))
+
 ### [1.0.3](https://github.com/linq2js/reasc/compare/v1.0.2...v1.0.3) (2021-09-12)
 
 
