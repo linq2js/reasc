@@ -30,52 +30,22 @@ export const reasc: Reasc = (...args: any[]): any => {
   const [options, component] =
     typeof args[1] === "function" ? args : [{}, args[0]];
   const contexts: any[] = [];
-  options.error && contexts.push([errorContext, options.error]);
-  options.loading && contexts.push([loadingContext, options.loading]);
+  options.error && contexts.push([errorContext.Provider, options.error]);
+  options.loading && contexts.push([loadingContext.Provider, options.loading]);
 
   const wrapper = (props: any, { loading, error }: ExtraProps) => {
     const hookData = options.useHooks?.(props) || ({} as any);
     return useAsyncComponent(component, props, hookData, loading, error);
   };
 
-  if (options.error && options.loading) {
+  if (contexts.length) {
     return React.memo((props) =>
-      React.createElement(
-        errorContext.Provider,
-        { value: options.error },
-        React.createElement(
-          loadingContext.Provider,
-          { value: options.loading },
-          wrapper(props, {
-            loading: options.loading as any,
-            error: options.error as any,
-          })
-        )
-      )
-    );
-  }
-
-  if (options.error) {
-    return React.memo((props) =>
-      React.createElement(
-        errorContext.Provider,
-        { value: options.error },
+      contexts.reduce(
+        (children, [provider, value]) =>
+          React.createElement(provider, { value }, children),
         wrapper(props, {
-          loading: React.useContext(loadingContext),
-          error: options.error as any,
-        })
-      )
-    );
-  }
-
-  if (options.loading) {
-    return React.memo((props) =>
-      React.createElement(
-        loadingContext.Provider,
-        { value: options.loading },
-        wrapper(props, {
-          error: React.useContext(errorContext),
-          loading: options.loading as any,
+          loading: options.loading || React.useContext(loadingContext),
+          error: options.error || React.useContext(errorContext),
         })
       )
     );

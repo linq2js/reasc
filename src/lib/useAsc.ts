@@ -376,9 +376,7 @@ function createContext<THookData>(
             })
             .finally(rerender);
 
-          if (!loading) throw result;
-
-          return loading(props);
+          return loading ? loading(props) : null;
         }
         context.rendered = true;
         return result;
