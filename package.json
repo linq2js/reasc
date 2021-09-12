@@ -17,13 +17,14 @@
   "scripts": {
     "build": "tsc",
     "build:es": "tsc -p tsconfig.es.json",
-    "prepare": "npm test && npm run build && npm run build:es",
+    "prerelease": "npm test && npm run build && npm run build:es",
     "release": "npm run prepare && standard-version && npm publish",
     "test": "jest"
   },
   "keywords": [
     "functional",
     "react",
+    "redux",
     "redux-react",
     "flux",
     "state",
