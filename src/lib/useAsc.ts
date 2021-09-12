@@ -107,7 +107,10 @@ function createContext<THookData>(
     if (context.disposed) throw DisposedError();
   };
 
-  const rerender = () => setState({ ...state });
+  const rerender = () => {
+    checkAvailable();
+    setState({ ...state });
+  };
 
   const registerActionDispatchingHandler = () => {
     if (removeActionDispatchingHandler) return;
