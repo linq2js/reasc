@@ -367,7 +367,7 @@ function createContext<THookData>(
       try {
         const result = component(props, context);
         if (result && typeof result.then === "function") {
-          const promise = wrapResult(context, result)
+          wrapResult(context, result)
             .then((value: any) => {
               context.resolved = { value };
             })
@@ -376,7 +376,7 @@ function createContext<THookData>(
             })
             .finally(rerender);
 
-          if (!loading) throw promise;
+          if (!loading) throw result;
 
           return loading(props);
         }
