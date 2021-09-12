@@ -358,19 +358,12 @@ function createContext<THookData>(
       return wrapResult(child, item.value);
     },
 
-    ready(...props: string[]): any {
-      const check = () => {
-        const state = store.getState();
-        return props.every((prop) => isNotNil(state[prop]));
-      };
-      if (check()) return Promise.resolve();
-      return context.when(check);
-    },
-
-    storeReady(name: string) {
-      const value = store.getState()[name];
-      if (isNotNil(value)) return Promise.resolve(value);
-      return context.ready(name).then(() => store.getState()[name]);
+    async storeReady(name: string, valueCheck = isNotNil) {
+      const getValue = () => store.getState()[name];
+      const value = getValue();
+      if (valueCheck(value)) return value;
+      await context.when(() => valueCheck(getValue()));
+      return getValue();
     },
 
     store(payload: any, defaultValue?: any) {

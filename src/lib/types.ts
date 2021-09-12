@@ -53,9 +53,11 @@ export interface AsyncContext {
     ...actions: (string | ((action: StoreAction) => boolean))[]
   ): CancellablePromise<StoreAction>;
 
-  storeReady<T>(name: string): Promise<T>;
+  storeReady<T>(
+    name: string,
+    valueCheck?: (value: T | undefined) => boolean
+  ): Promise<T>;
   store<T>(name: string, defaultValue?: T): T;
-  ready<T>(...names: string[]): Promise<void>;
   store(values: { [key: string]: any }): void;
 
   fork<TPayload, TResult>(
