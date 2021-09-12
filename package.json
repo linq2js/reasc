@@ -33,12 +33,35 @@
     "async",
     "component"
   ],
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E  HUSKY_GIT_PARAMS"
+    }
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ],
+    "rules": {
+      "subject-case": [
+        2,
+        "never",
+        [
+          "start-case",
+          "pascal-case"
+        ]
+      ]
+    }
+  },
   "dependencies": {},
   "devDependencies": {
+    "@commitlint/cli": "^13.1.0",
+    "@commitlint/config-conventional": "^13.1.0",
     "@testing-library/react": "12.0.0",
     "@testing-library/react-hooks": "7.0.2",
     "@types/jest": "^27.0.1",
     "@types/node": "16.7.13",
+    "husky": "^7.0.2",
     "jest": "^27.1.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
