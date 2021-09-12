@@ -33,12 +33,32 @@ interface CacheItem {
   payload: any;
 }
 
+interface StateAccessor {
+  get(): any;
+  set(value: any): void;
+}
+
 const DisposedError = () => new Error();
+const ForkedStateError = () =>
+  new Error("Cannot access state inside forked context");
 const InvalidHookData = {};
-const InvalidSetState = () => {
-  throw new Error("Cannot update state inside forked context");
-};
 const InvalidCache = new Map();
+const InvalidState = {
+  get: () => {
+    throw DisposedError();
+  },
+  set: () => {
+    throw DisposedError();
+  },
+};
+const ForkedState = {
+  get: () => {
+    throw ForkedStateError();
+  },
+  set: () => {
+    throw ForkedStateError();
+  },
+};
 
 export function useAsc<TProps, THookData>(
   component: (props: TProps, context: AsyncComponentContext<THookData>) => any,
@@ -48,12 +68,21 @@ export function useAsc<TProps, THookData>(
   error: ErrorCallback
 ) {
   const store = React.useContext(storeContext);
-  const [state, setState] = React.useState<any>({});
+  const [, rerender] = React.useState<any>();
   const contextRef = React.useRef<Context<THookData>>();
+  const stateRef = React.useRef<StateAccessor>();
 
   React.useEffect(() => {
     return contextRef.current?.dispose;
   }, [contextRef.current]);
+
+  if (!stateRef.current) {
+    let state = {};
+    stateRef.current = {
+      get: () => state,
+      set: (value: any) => (state = value),
+    };
+  }
 
   // re-render when promise resolved
   if (contextRef.current?.resolved) {
@@ -76,8 +105,8 @@ export function useAsc<TProps, THookData>(
     hookData,
     contextRef.current?.cache || new Map(),
     store,
-    state,
-    setState,
+    stateRef.current,
+    rerender,
     loading,
     error
   );
@@ -92,8 +121,8 @@ function createContext<THookData>(
   hookData: THookData,
   cache: Map<any, CacheItem>,
   store: Store,
-  state: any,
-  setState: React.SetStateAction<any>,
+  stateAccessor: StateAccessor,
+  originalRerender: Function,
   loading?: LoadingCallback,
   error?: ErrorCallback
 ) {
@@ -111,7 +140,7 @@ function createContext<THookData>(
 
   const rerender = () => {
     checkAvailable();
-    setState({ ...state });
+    originalRerender({});
   };
 
   const registerActionDispatchingHandler = () => {
@@ -200,21 +229,21 @@ function createContext<THookData>(
       return disposed || parent?.disposed || false;
     },
 
-    callback(func: Function, transform?: Function): any {
-      return (payload: any) => {
+    callback(func: Function, defaultPayload?: any): any {
+      return (payload: any = defaultPayload) => {
         const child = createContext(
           undefined,
           InvalidHookData,
           InvalidCache,
           store,
-          state,
-          InvalidSetState,
+          stateAccessor,
+          originalRerender,
           loading,
           error
         );
 
-        if (transform) {
-          payload = transform(payload);
+        if (defaultPayload && payload !== defaultPayload) {
+          payload = { ...defaultPayload, ...payload };
         }
 
         return func(child, payload);
@@ -236,8 +265,8 @@ function createContext<THookData>(
         InvalidHookData,
         InvalidCache,
         store,
-        state,
-        InvalidSetState,
+        ForkedState,
+        originalRerender,
         undefined,
         undefined
       );
@@ -300,8 +329,8 @@ function createContext<THookData>(
         hookData,
         context.cache,
         store,
-        state,
-        setState,
+        stateAccessor,
+        originalRerender,
         loading,
         error
       );
@@ -327,8 +356,8 @@ function createContext<THookData>(
         InvalidHookData,
         InvalidCache,
         store,
-        state,
-        InvalidSetState,
+        InvalidState,
+        originalRerender,
         loading,
         error
       );
@@ -383,16 +412,17 @@ function createContext<THookData>(
 
     state(payload: any, defaultValue?: any) {
       checkAvailable();
+      const state = stateAccessor.get();
       if (typeof payload === "string") {
         return payload in state ? state[payload] : defaultValue;
       }
       const nextState = mergeState(state, payload);
 
       if (nextState !== state) {
-        state = nextState;
+        stateAccessor.set(nextState);
         if (context.rendered) {
           context.setStateTimeout && clearTimeout(context.setStateTimeout);
-          context.setStateTimeout = setTimeout(setState, 0, state);
+          context.setStateTimeout = setTimeout(rerender, 0);
         }
       }
     },
