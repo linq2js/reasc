@@ -5,9 +5,9 @@
 /react/*.d.ts
 /react/*.jsx
 
-/redux/*.js
-/redux/*.d.ts
-/redux/*.jsx
+/store/*.js
+/store/*.d.ts
+/store/*.jsx
 
 /utils/*.js
 /utils/*.d.ts
