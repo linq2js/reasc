@@ -1,11 +1,12 @@
 import * as React from "react";
+
+import { createAsyncContext, InternalContext } from "./createAsyncContext";
 import {
   AsyncComponentContext,
   ErrorCallback,
   LoadingCallback,
   StateAccessor,
 } from "./types";
-import { createAsyncContext, InternalContext } from "./createAsyncContext";
 import { useStore } from "./useStore";
 
 export function useAsc<TProps, THookData>(

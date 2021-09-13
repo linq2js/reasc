@@ -1,15 +1,14 @@
-import { createStore } from "redux";
+import { createStore, Store } from "redux";
 
 import * as React from "react";
-import { Provider } from "react-redux";
 
 import { render, fireEvent } from "@testing-library/react";
 
-import { reasc } from "../lib/reasc";
-import { delayedAct } from "../lib/testUtils";
-import { Action } from "../lib/types";
-import { useStore } from "../lib/useStore";
-import { createProvider } from "./createProvider";
+import { AsyncProvider } from "../store/AsyncProvider";
+import { reasc } from "./reasc";
+import { reducer } from "./reducer";
+import { delayedAct } from "./testUtils";
+import { Action } from "./types";
 
 test("counter: using store", async () => {
   const [Provider] = createProvider({ count: 0 });
@@ -78,40 +77,12 @@ test("wait store value ready", async () => {
   expect(getByTestId("result").innerHTML).toBe("1");
 });
 
-test("proxy provider", () => {
-  const ProxyProvider = createProvider();
-  const store = createStore((state = 1) => state);
-  const callback = jest.fn();
-  const Component = () => {
-    const store = useStore();
-    callback(store.getState());
-    return null;
-  };
-  const App = () => (
-    <Provider store={store}>
-      <ProxyProvider>
-        <Component />
-      </ProxyProvider>
-    </Provider>
-  );
-  render(<App />);
-  expect(callback).toBeCalledWith(1);
-});
-
-test("passing store as argument", () => {
-  const store = createStore((state = 1) => state);
-  const [Provider] = createProvider(store);
-  const callback = jest.fn();
-  const Component = () => {
-    const store = useStore();
-    callback(store.getState());
-    return null;
-  };
-  const App = () => (
-    <Provider>
-      <Component />
-    </Provider>
-  );
-  render(<App />);
-  expect(callback).toBeCalledWith(1);
-});
+function createProvider(initialState: any): [React.FC, Store] {
+  const store = createStore(reducer, initialState);
+  return [
+    (props: any) => (
+      <AsyncProvider store={store}>{props.children}</AsyncProvider>
+    ),
+    store,
+  ];
+}

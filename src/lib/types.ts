@@ -3,6 +3,11 @@ export interface StoreAction {
   [key: string]: any;
 }
 
+export type StoreReducer<TState = any> = (
+  state: TState,
+  action: StoreAction
+) => TState;
+
 export interface Store<TState = any> {
   getState(): TState;
   subscribe(listener: () => void): any;

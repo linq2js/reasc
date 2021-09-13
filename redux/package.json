@@ -1,5 +1,0 @@
-{
-  "main": "./index.js",
-  "types": "./index.d.ts",
-  "module": "../es/redux/index.js"
-}

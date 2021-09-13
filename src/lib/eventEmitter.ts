@@ -1,4 +1,10 @@
-export function eventEmitter<T = never>() {
+export interface EventEmitter<T> {
+  on(listener: (payload: T) => void): () => void;
+  emit(): void;
+  emit(payload: T): void;
+}
+
+export function eventEmitter<T = never>(): EventEmitter<T> {
   const listeners = new Set<(payload: T) => void>();
 
   return {
@@ -11,8 +17,8 @@ export function eventEmitter<T = never>() {
         listeners.delete(listener);
       };
     },
-    emit(payload: T) {
-      listeners.forEach((listener) => listener(payload));
+    emit(...args: any[]) {
+      Array.from(listeners).forEach((listener) => listener(args[0]));
     },
   };
 }
