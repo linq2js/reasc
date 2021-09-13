@@ -103,7 +103,7 @@ export type Action<
   TPayload = never,
   TResult = any,
   TContext extends AsyncContext = AsyncContext
-> = (context: TContext, payload: TPayload) => TResult;
+> = (payload: TPayload, context: TContext) => TResult;
 
 export type ActionListener = (action: StoreAction) => void;
 
@@ -114,3 +114,13 @@ export interface AsyncComponentOptions<TProps, THookData = any> {
 }
 
 export const MERGE_STATE_ACTION = "REASC_MERGE_STATE";
+
+export interface CacheItem {
+  value: any;
+  payload: any;
+}
+
+export interface StateAccessor {
+  get(): any;
+  set(value: any): void;
+}

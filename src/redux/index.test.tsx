@@ -49,7 +49,7 @@ test("counter: using store", async () => {
 
 test("wait store value ready", async () => {
   const [Provider] = createProvider({});
-  const LoadData: Action = async ({ delay, store }) => {
+  const LoadData: Action = async (_, { delay, store }) => {
     await delay(10);
     store({ data: 1 });
   };
