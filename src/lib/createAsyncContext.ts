@@ -105,6 +105,7 @@ export function createAsyncContext<THookData>(
   };
 
   const handleAsyncValues = (type: "all" | "race", values: any): any => {
+    checkAvailable();
     const entries = Object.entries(values);
     const isArray = Array.isArray(values);
     const results: any = isArray ? [] : {};

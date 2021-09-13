@@ -17,12 +17,13 @@ export interface AsyncComponentContext<THookData = { [key: string]: any }>
   state(values: { [key: string]: any }): void;
 }
 
-export interface CancellablePromise<T = void> extends Promise<T> {
+export interface CancellablePromise<T = void>
+  extends Promise<PromiseTypeInfer<T>> {
   cancel(): void;
 }
 
-export type InferCancellablePromise<T> = T extends Promise<infer TResolved>
-  ? CancellablePromise<TResolved>
+export type PromiseTypeInfer<T> = T extends Promise<infer TResolved>
+  ? TResolved
   : T;
 
 export interface AsyncContext {
@@ -59,41 +60,41 @@ export interface AsyncContext {
   fork<TPayload, TResult>(
     action: Action<TPayload, TResult, AsyncContext>,
     payload?: TPayload
-  ): InferCancellablePromise<TResult>;
+  ): CancellablePromise<TResult>;
 
   call<TPayload, TResult>(
     action: Action<TPayload, TResult, this>,
     payload?: TPayload
-  ): InferCancellablePromise<TResult>;
+  ): CancellablePromise<TResult>;
 
   memo<TPayload extends {}, TResult>(
     action: (payload: TPayload) => TResult,
     payload?: TPayload
-  ): InferCancellablePromise<TResult>;
+  ): CancellablePromise<TResult>;
 
   memo<TPayload extends {}, TResult>(
     action: (payload: TPayload) => TResult,
     payload?: TPayload,
     local?: boolean
-  ): InferCancellablePromise<TResult>;
+  ): CancellablePromise<TResult>;
 
   memo<TPayload extends {}, TResult>(
     action: (payload: TPayload) => TResult,
     local: boolean
-  ): InferCancellablePromise<TResult>;
+  ): CancellablePromise<TResult>;
 
   memo<TPayload extends {}, TResult>(
     key: any,
     action: (payload: TPayload) => TResult,
     payload?: TPayload,
     local?: boolean
-  ): InferCancellablePromise<TResult>;
+  ): CancellablePromise<TResult>;
 
   memo<TPayload extends {}, TResult>(
     key: any,
     action: (payload: TPayload) => TResult,
     local: boolean
-  ): InferCancellablePromise<TResult>;
+  ): CancellablePromise<TResult>;
 }
 
 export type LoadingCallback<TProps = {}> = (props: TProps) => any;
