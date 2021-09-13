@@ -5,8 +5,8 @@ import {
   LoadingCallback,
   StateAccessor,
 } from "./types";
-import { storeContext } from "./storeContext";
 import { createAsyncContext, InternalContext } from "./createAsyncContext";
+import { useStore } from "./useStore";
 
 export function useAsc<TProps, THookData>(
   component: (props: TProps, context: AsyncComponentContext<THookData>) => any,
@@ -15,7 +15,7 @@ export function useAsc<TProps, THookData>(
   loading: LoadingCallback,
   error: ErrorCallback
 ) {
-  const store = React.useContext(storeContext);
+  const store = useStore();
   const [, rerender] = React.useState<any>();
   const contextRef = React.useRef<InternalContext<THookData>>();
   const stateRef = React.useRef<StateAccessor>();

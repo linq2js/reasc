@@ -20,7 +20,8 @@
     "release": "standard-version && npm publish",
     "release:minor": "standard-version -r minor && npm publish",
     "release:major": "standard-version -r major && npm publish",
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [
     "functional",
