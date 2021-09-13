@@ -22,6 +22,9 @@ yarn add reasc
 import { reasc } from "reasc";
 import { useState } from "react";
 
+const LoadUserInfoApi = (user: string) =>
+  fetch(`https://api.github.com/users/${props.user}`).then((res) => res.json());
+
 const UserInfo = reasc(
   // specified what will be rendered while rendering progress is executing
   { loading: () => "Loading..." },
@@ -30,9 +33,7 @@ const UserInfo = reasc(
     // delay rendering in 300ms
     // current rendering progress will be cancelled if there is new rendering requested
     await context.delay(300);
-    const data = await fetch(`https://api.github.com/users/${props.user}`).then(
-      (res) => res.json()
-    );
+    const data = await context.call(LoadUserInfoApi, user);
     return <pre>{JSON.stringify(data, null, 2)}</pre>;
   }
 );
