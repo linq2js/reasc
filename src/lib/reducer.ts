@@ -1,5 +1,5 @@
-import { StoreAction, MERGE_STATE_ACTION } from "./types";
 import { eventEmitter } from "./eventEmitter";
+import { StoreAction, MERGE_STATE_ACTION } from "./types";
 
 const DEFAULT_STATE = {};
 

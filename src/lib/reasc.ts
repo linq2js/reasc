@@ -1,3 +1,5 @@
+import * as React from "react";
+
 import {
   AsyncComponentOptions,
   LoadingCallback,
@@ -5,7 +7,6 @@ import {
   AsyncComponentContext,
 } from "./types";
 import { useAsc } from "./useAsc";
-import * as React from "react";
 
 const loadingContext = React.createContext<any>(null as any);
 const errorContext = React.createContext<any>(null as any);

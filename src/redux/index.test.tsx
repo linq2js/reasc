@@ -1,12 +1,15 @@
+import { createStore } from "redux";
+
 import * as React from "react";
-import { createProvider } from "./createProvider";
-import { reasc } from "../lib/reasc";
 import { Provider } from "react-redux";
+
 import { render, fireEvent } from "@testing-library/react";
+
+import { reasc } from "../lib/reasc";
 import { delayedAct } from "../lib/testUtils";
 import { Action } from "../lib/types";
-import { createStore } from "redux";
 import { useStore } from "../lib/useStore";
+import { createProvider } from "./createProvider";
 
 test("counter: using store", async () => {
   const [Provider] = createProvider({ count: 0 });

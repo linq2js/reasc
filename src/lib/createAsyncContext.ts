@@ -1,3 +1,9 @@
+import { delay } from "./delay";
+import { eventEmitter } from "./eventEmitter";
+import { isPatternMatch } from "./isPatternMatch";
+import { mergeState } from "./mergeState";
+import { objectEqual } from "./objectEqual";
+import { actionDispatchingHandlers } from "./reducer";
 import {
   Action,
   AsyncComponentContext,
@@ -9,12 +15,6 @@ import {
   Store,
   StoreAction,
 } from "./types";
-import { eventEmitter } from "./eventEmitter";
-import { objectEqual } from "./objectEqual";
-import { actionDispatchingHandlers } from "./reducer";
-import { delay } from "./delay";
-import { isPatternMatch } from "./isPatternMatch";
-import { mergeState } from "./mergeState";
 
 export interface InternalContext<THookData>
   extends AsyncComponentContext<THookData> {
@@ -22,7 +22,6 @@ export interface InternalContext<THookData>
   readonly hookData: THookData;
   cache: Map<any, CacheItem>;
   rendered: boolean;
-  setStateTimeout?: NodeJS.Timeout;
   resolved?: { value?: any; error?: Error };
   dispose(): void;
   render<TProps>(
@@ -54,6 +53,7 @@ const ForkedState = {
 };
 
 export function createAsyncContext<THookData>(
+  type: "component" | "forked",
   parent: InternalContext<THookData> | undefined,
   hookData: THookData,
   cache: Map<any, CacheItem>,
@@ -66,6 +66,7 @@ export function createAsyncContext<THookData>(
   let disposed = false;
   let unsubscribeStateChange: (() => void) | undefined = undefined;
   let removeActionDispatchingHandler: (() => void) | undefined = undefined;
+  let setStateTimeout: NodeJS.Timeout;
   const dependencies = new Map<string, any>();
   const whenActionDispatchingHandlers = eventEmitter<StoreAction>();
 
@@ -161,7 +162,6 @@ export function createAsyncContext<THookData>(
     hookData,
     cache,
     resolved: undefined,
-    setStateTimeout: undefined,
     rendered: false,
     get disposed() {
       return disposed || parent?.disposed || false;
@@ -170,6 +170,7 @@ export function createAsyncContext<THookData>(
     callback(func: Function, defaultPayload?: any): any {
       return (payload: any = defaultPayload) => {
         const child = createAsyncContext(
+          type,
           undefined,
           InvalidHookData,
           InvalidCache,
@@ -199,6 +200,7 @@ export function createAsyncContext<THookData>(
     ) {
       checkAvailable();
       const child = createAsyncContext(
+        "forked",
         context,
         InvalidHookData,
         InvalidCache,
@@ -262,6 +264,7 @@ export function createAsyncContext<THookData>(
     ) {
       checkAvailable();
       const child = createAsyncContext(
+        type,
         context,
         hookData,
         context.cache,
@@ -289,6 +292,7 @@ export function createAsyncContext<THookData>(
             args;
 
       const child = createAsyncContext(
+        "forked",
         context,
         InvalidHookData,
         InvalidCache,
@@ -315,7 +319,7 @@ export function createAsyncContext<THookData>(
 
       if (!item || !objectEqual(item.payload, payload)) {
         item = {
-          value: action(payload),
+          value: action(payload, child),
           payload,
         };
         cache.set(key, item);
@@ -337,8 +341,10 @@ export function createAsyncContext<THookData>(
       const state = store.getState();
       if (typeof payload === "string") {
         const value = payload in state ? state[payload] : defaultValue;
-        dependencies.set(payload, value);
-        subscribeStore();
+        if (type === "component") {
+          dependencies.set(payload, value);
+          subscribeStore();
+        }
         return value;
       }
       const nextState = mergeState(state, payload);
@@ -349,6 +355,9 @@ export function createAsyncContext<THookData>(
 
     state(payload: any, defaultValue?: any) {
       checkAvailable();
+      if (type !== "component") {
+        throw new Error("Invalid Operation");
+      }
       const state = stateAccessor.get();
       if (typeof payload === "string") {
         return payload in state ? state[payload] : defaultValue;
@@ -358,8 +367,8 @@ export function createAsyncContext<THookData>(
       if (nextState !== state) {
         stateAccessor.set(nextState);
         if (context.rendered) {
-          context.setStateTimeout && clearTimeout(context.setStateTimeout);
-          context.setStateTimeout = setTimeout(rerender, 0);
+          setStateTimeout && clearTimeout(setStateTimeout);
+          setStateTimeout = setTimeout(rerender, 0);
         }
       }
     },
@@ -391,6 +400,7 @@ export function createAsyncContext<THookData>(
     dispose() {
       if (disposed) return;
       disposed = true;
+      setStateTimeout && clearTimeout(setStateTimeout);
       unsubscribeStateChange?.();
     },
   };

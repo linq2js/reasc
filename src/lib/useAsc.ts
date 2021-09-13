@@ -49,6 +49,7 @@ export function useAsc<TProps, THookData>(
   }
 
   const context = createAsyncContext(
+    "component",
     undefined,
     hookData,
     contextRef.current?.cache || new Map(),

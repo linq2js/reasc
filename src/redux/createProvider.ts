@@ -1,6 +1,3 @@
-import * as React from "react";
-import { Provider as ReduxProvider, useStore } from "react-redux";
-import { Provider as ReascProvider } from "../lib/Provider";
 import {
   StoreCreator,
   createStore,
@@ -8,6 +5,11 @@ import {
   Reducer,
   StoreEnhancer,
 } from "redux";
+
+import * as React from "react";
+import { Provider as ReduxProvider, useStore } from "react-redux";
+
+import { Provider as ReascProvider } from "../lib/Provider";
 import { reducer } from "../lib/reducer";
 
 export type CreateProviderResult<TState = any> = [React.FC, Store<TState>];

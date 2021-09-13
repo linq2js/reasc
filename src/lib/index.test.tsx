@@ -1,7 +1,9 @@
 import * as React from "react";
+
+import { render, fireEvent } from "@testing-library/react";
+
 import { delay } from "./delay";
 import { reasc } from "./reasc";
-import { render, fireEvent } from "@testing-library/react";
 import { delayedAct } from "./testUtils";
 
 const defaultOptions = {
