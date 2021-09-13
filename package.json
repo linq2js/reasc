@@ -18,6 +18,7 @@
     "build": "tsc",
     "build:es": "tsc -p tsconfig.es.json",
     "release": "standard-version && npm publish",
+    "release:major": "standard-version -r major && npm publish",
     "test": "jest",
     "test:coverage": "jest --coverage"
   },
