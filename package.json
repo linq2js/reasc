@@ -17,7 +17,7 @@
   "scripts": {
     "build": "tsc",
     "build:es": "tsc -p tsconfig.es.json",
-    "release:patch": "standard-version -r patch && npm publish",
+    "release": "standard-version && npm publish",
     "release:minor": "standard-version -r minor && npm publish",
     "release:major": "standard-version -r major && npm publish",
     "test": "jest"
