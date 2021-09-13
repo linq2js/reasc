@@ -21,34 +21,28 @@ yarn add reasc
 ```jsx
 import { reasc } from "reasc";
 import { useState } from "react";
-
-const LoadUserInfoApi = (user: string) =>
-  fetch(`https://api.github.com/users/${props.user}`).then((res) => res.json());
-
 const UserInfo = reasc(
-  // specified what will be rendered while rendering progress is executing
-  { loading: () => "Loading..." },
-  async (props, context) => {
-    if (!props.user) return "No data";
-    // delay rendering in 300ms
-    // current rendering progress will be cancelled if there is new rendering requested
-    await context.delay(300);
-    const data = await context.call(LoadUserInfoApi, user);
+  { loading: () => <div>Loading...</div> },
+  async ({ user }, { delay }) => {
+    if (!user) return <div>No data</div>;
+    await delay(300);
+    const apiUrl = `https://api.github.com/users/${user}`;
+    const data = await fetch(apiUrl).then((res) => res.json());
     return <pre>{JSON.stringify(data, null, 2)}</pre>;
   }
 );
-
 const App = () => {
   const [user, setUser] = useState("");
-  const changeChange = (e) => setUser(e.target.value);
-
+  const handleChange = (e) => setUser(e.target.value);
   return (
     <>
-      <input onChange={handleChange} />
-      <div>
-        <UserInfo user={user} />
-      </div>
+      <input onChange={handleChange} placeholder="Enter github username" />
+      <UserInfo user={user} />
     </>
   );
 };
 ```
+
+## Examples
+
+- [Github User Search App](https://codesandbox.io/s/reasc-demo-gituser-search-70l6i?file=/src/App.tsx)

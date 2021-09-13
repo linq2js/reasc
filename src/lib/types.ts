@@ -67,6 +67,11 @@ export interface AsyncContext {
     payload?: TPayload
   ): CancellablePromise<TResult>;
 
+  call<TCommands extends {}, TResult = any>(
+    name: keyof TCommands,
+    payload?: any
+  ): TResult;
+
   call<TPayload, TResult>(
     action: Action<TPayload, TResult, this>,
     payload?: TPayload

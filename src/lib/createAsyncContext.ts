@@ -257,11 +257,7 @@ export function createAsyncContext<THookData>(
       }
       return store.dispatch(action);
     },
-
-    call<TPayload, TResult>(
-      action: Action<TPayload, TResult, any>,
-      payload: TPayload
-    ) {
+    call(action: any, payload?: any): any {
       checkAvailable();
       const child = createAsyncContext(
         type,
@@ -274,6 +270,13 @@ export function createAsyncContext<THookData>(
         loading,
         error
       );
+      if (typeof action === "string") {
+        const command = (store as any).__commands[action];
+        if (!command) {
+          throw new Error(`No command "${action}" provided`);
+        }
+        action = command;
+      }
       return wrapResult(child, action(payload, child));
     },
     memo(...args: any[]) {
