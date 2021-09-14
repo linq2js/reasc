@@ -12,7 +12,7 @@ import { useStore } from "./useStore";
 export function useAsc<TProps, THookData>(
   component: (props: TProps, context: AsyncComponentContext<THookData>) => any,
   props: TProps,
-  hookData: THookData,
+  useHooks: (props: TProps) => THookData,
   loading: LoadingCallback,
   error: ErrorCallback
 ) {
@@ -20,18 +20,28 @@ export function useAsc<TProps, THookData>(
   const [, rerender] = React.useState<any>();
   const contextRef = React.useRef<InternalContext<THookData>>();
   const stateRef = React.useRef<StateAccessor>();
-
-  React.useEffect(() => {
-    return contextRef.current?.dispose;
-  }, [contextRef.current]);
+  const hookData = useHooks ? useHooks.call(null, props) : (undefined as any);
+  let isAsync = false;
 
   if (!stateRef.current) {
     let state = {};
     stateRef.current = {
       get: () => state,
-      set: (value: any) => (state = value),
+      set: (value: any) => {
+        state = value;
+      },
     };
   }
+
+  React.useEffect(() => {
+    !isAsync && contextRef.current?.runEffects();
+  });
+
+  React.useEffect(() => {
+    return () => {
+      contextRef.current?.dispose(true);
+    };
+  }, []);
 
   // re-render when promise resolved
   if (contextRef.current?.resolved) {
@@ -39,7 +49,8 @@ export function useAsc<TProps, THookData>(
     const resolved = contextRef.current.resolved;
     contextRef.current.resolved = undefined;
     contextRef.current.rendered = true;
-
+    isAsync = true;
+    setTimeout(contextRef.current.runEffects);
     if (resolved.error) {
       if (!error) {
         throw resolved.error;
@@ -48,6 +59,9 @@ export function useAsc<TProps, THookData>(
     }
     return resolved.value;
   }
+
+  const prevOnDispose = contextRef.current?.__onDispose;
+  contextRef.current?.dispose(false);
 
   const context = createAsyncContext(
     "component",
@@ -61,7 +75,13 @@ export function useAsc<TProps, THookData>(
     error
   );
 
+  if (prevOnDispose) {
+    context.__onDispose = prevOnDispose;
+  }
+
   contextRef.current = context;
 
-  return context.render(props, component);
+  const renderResult = context.render(props, component);
+  isAsync = renderResult.async;
+  return renderResult.result;
 }

@@ -35,8 +35,7 @@ export const reasc: Reasc = (...args: any[]): any => {
   options.loading && contexts.push([loadingContext.Provider, options.loading]);
 
   const wrapper = (props: any, { loading, error }: ExtraProps) => {
-    const hookData = options.useHooks?.(props) || ({} as any);
-    return useAsc(component, props, hookData, loading, error);
+    return useAsc(component, props, options.useHooks, loading, error);
   };
 
   if (contexts.length) {

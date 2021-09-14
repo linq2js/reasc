@@ -1,3 +1,5 @@
+import { Ref } from "react";
+
 export interface StoreAction {
   type: string;
   [key: string]: any;
@@ -20,6 +22,11 @@ export interface AsyncComponentContext<THookData = { [key: string]: any }>
 
   state<T>(name: string, defaultValue?: T): T;
   state(values: { [key: string]: any }): void;
+
+  ref<T>(): Ref<T>;
+  ref<T>(defaultValue: T): Ref<T>;
+
+  effect(...effects: Function[]): void;
 }
 
 export interface CancellablePromise<T = void>

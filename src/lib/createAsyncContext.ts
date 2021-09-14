@@ -23,11 +23,16 @@ export interface InternalContext<THookData>
   cache: Map<any, CacheItem>;
   rendered: boolean;
   resolved?: { value?: any; error?: Error };
-  dispose(): void;
+  dispose(unmount: boolean): void;
+  runEffects(): void;
   render<TProps>(
     props: TProps,
     component: (props: TProps, context: AsyncComponentContext<THookData>) => any
-  ): any;
+  ): {
+    async: boolean;
+    result: any;
+  };
+  [key: string]: any;
 }
 
 const DisposedError = () => new Error();
@@ -66,9 +71,14 @@ export function createAsyncContext<THookData>(
   let disposed = false;
   let unsubscribeStateChange: (() => void) | undefined = undefined;
   let removeActionDispatchingHandler: (() => void) | undefined = undefined;
+  let hookIndex = 0;
   let setStateTimeout: NodeJS.Timeout;
   const dependencies = new Map<string, any>();
   const whenActionDispatchingHandlers = eventEmitter<StoreAction>();
+  const effects = new Map<number, Function>();
+  const onCleanup = new Map<number, Function>();
+
+  const getHookIndex = () => hookIndex++;
 
   const checkAvailable = () => {
     if (context.disposed) {
@@ -163,8 +173,25 @@ export function createAsyncContext<THookData>(
     cache,
     resolved: undefined,
     rendered: false,
+    __onDispose: new Map<number, Function>(),
     get disposed() {
       return disposed || parent?.disposed || false;
+    },
+
+    runEffects() {
+      effects.forEach((effect, key) => {
+        const cleanup = effect();
+        if (typeof cleanup === "function") {
+          onCleanup.set(key, cleanup);
+        }
+      });
+    },
+
+    effect(...args: Function[]) {
+      args.forEach((effect) => {
+        const key = getHookIndex();
+        effects.set(key, effect);
+      });
     },
 
     callback(func: Function, defaultPayload?: any): any {
@@ -187,6 +214,16 @@ export function createAsyncContext<THookData>(
 
         return func(child, payload);
       };
+    },
+
+    ref(defaultValue?: any) {
+      const key = `$ref:${getHookIndex()}`;
+      let ref = stateAccessor.get()[key];
+      if (!ref) {
+        ref = { current: defaultValue };
+        stateAccessor.set({ ...stateAccessor.get(), [key]: ref });
+      }
+      return ref;
     },
 
     delay(ms) {
@@ -216,9 +253,11 @@ export function createAsyncContext<THookData>(
     all(values: any) {
       return handleAsyncValues("all", values);
     },
+
     race(values: any) {
       return handleAsyncValues("race", values);
     },
+
     when(...actions: any[]) {
       checkAvailable();
       registerActionDispatchingHandler();
@@ -366,7 +405,6 @@ export function createAsyncContext<THookData>(
         return payload in state ? state[payload] : defaultValue;
       }
       const nextState = mergeState(state, payload);
-
       if (nextState !== state) {
         stateAccessor.set(nextState);
         if (context.rendered) {
@@ -389,10 +427,16 @@ export function createAsyncContext<THookData>(
             })
             .finally(rerender);
 
-          return loading ? loading(props) : null;
+          return {
+            async: true,
+            result: loading ? loading(props) : null,
+          };
         }
         context.rendered = true;
-        return result;
+        return {
+          async: false,
+          result,
+        };
       } catch (e) {
         context.rendered = true;
         if (!error) throw e;
@@ -400,11 +444,21 @@ export function createAsyncContext<THookData>(
       }
     },
 
-    dispose() {
+    dispose(unmount) {
       if (disposed) return;
       disposed = true;
       setStateTimeout && clearTimeout(setStateTimeout);
       unsubscribeStateChange?.();
+      onCleanup.forEach((cleanup, key) => {
+        const dispose = cleanup();
+        if (typeof dispose === "function") {
+          context.__onDispose.set(key, dispose);
+        }
+      });
+      if (unmount) {
+        const onDispose: Map<any, Function> = context.__onDispose;
+        onDispose.forEach((dispose) => dispose());
+      }
     },
   };
 
@@ -437,7 +491,7 @@ function wrapResult(context: InternalContext<any>, result: any, ct?: any): any {
         cancel() {
           if (ct) ct.cancelled = true;
           result?.cancel();
-          context.dispose();
+          context.dispose(false);
         },
       }
     );
